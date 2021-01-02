@@ -24,8 +24,6 @@ import (
 	"github.com/pingcap/log"
 	"go.etcd.io/etcd/clientv3"
 	"go.uber.org/zap"
-
-	"github.com/pingcap-incubator/tidb-dashboard/pkg/utils/host"
 )
 
 const tidbTopologyKeyPrefix = "/topology/tidb/"
@@ -116,7 +114,7 @@ func parseTiDBInfo(address string, value []byte) (*TiDBInfo, error) {
 	if err != nil {
 		return nil, ErrInvalidTopologyData.Wrap(err, "TiDB info unmarshal failed")
 	}
-	hostname, port, err := host.ParseHostAndPortFromAddress(address)
+	host, port, err := parseHostAndPortFromAddress(address)
 	if err != nil {
 		return nil, ErrInvalidTopologyData.Wrap(err, "TiDB info address parse failed")
 	}
@@ -124,7 +122,7 @@ func parseTiDBInfo(address string, value []byte) (*TiDBInfo, error) {
 	return &TiDBInfo{
 		GitHash:        ds.GitHash,
 		Version:        ds.Version,
-		IP:             hostname,
+		IP:             host,
 		Port:           port,
 		DeployPath:     ds.DeployPath,
 		Status:         ComponentStatusUnreachable,

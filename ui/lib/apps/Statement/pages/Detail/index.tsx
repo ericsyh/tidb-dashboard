@@ -4,8 +4,8 @@ import { Selection } from 'office-ui-fabric-react/lib/Selection'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
-import { useLocalStorageState } from 'ahooks'
 import { ArrowLeftOutlined } from '@ant-design/icons'
+import { useLocalStorageState } from '@umijs/hooks'
 
 import client, { StatementModel } from '@lib/client'
 import {
@@ -20,7 +20,7 @@ import {
   TextWithInfo,
 } from '@lib/components'
 import CopyLink from '@lib/components/CopyLink'
-import formatSql from '@lib/utils/sqlFormatter'
+import formatSql from '@lib/utils/formatSql'
 import { buildQueryFn, parseQueryFn } from '@lib/utils/query'
 import { useClientRequest } from '@lib/utils/useClientRequest'
 
@@ -99,14 +99,7 @@ function DetailPage() {
                         expanded={sqlExpanded}
                         onClick={toggleSqlExpanded}
                       />
-                      <CopyLink
-                        displayVariant="formatted_sql"
-                        data={formatSql(plans[0].digest_text!)}
-                      />
-                      <CopyLink
-                        displayVariant="original_sql"
-                        data={plans[0].digest_text!}
-                      />
+                      <CopyLink data={formatSql(plans[0].digest_text!)} />
                     </Space>
                   }
                 >

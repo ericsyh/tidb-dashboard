@@ -22,7 +22,7 @@ function QPS() {
           name: 'Queries {result}',
         },
       ]}
-      unit="qps"
+      unit="ops"
       type="bar"
     />
   )

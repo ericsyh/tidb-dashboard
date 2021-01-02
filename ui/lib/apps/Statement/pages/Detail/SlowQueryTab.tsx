@@ -12,7 +12,6 @@ export interface ISlowQueryTabProps {
 
 export default function SlowQueryTab({ query }: ISlowQueryTabProps) {
   const controller = useSlowQueryTableController(
-    null,
     DEF_SLOW_QUERY_COLUMN_KEYS,
     false,
     {

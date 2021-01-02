@@ -1,8 +1,7 @@
-import React, { useMemo, useRef } from 'react'
-import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons'
-import { useSize } from 'ahooks'
+import React, { useMemo } from 'react'
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons'
+import { useSize } from '@umijs/hooks'
 import Flexbox from '@g07cha/flexbox-react'
-import { useSpring, animated } from 'react-spring'
 import { useClientRequest } from '@lib/utils/useClientRequest'
 import client, { InfoInfoResponse } from '@lib/client'
 
@@ -45,16 +44,15 @@ export default function ToggleBanner({
   collapsed,
   onToggle,
 }) {
-  const bannerRef = useRef(null)
-  const bannerSize = useSize(bannerRef)
-  const transBanner = useSpring({
+  const [bannerSize, bannerRef] = useSize<HTMLDivElement>()
+  const bannerStyle = {
     opacity: collapsed ? 0 : 1,
     height: collapsed ? toggleHeight : bannerSize.height || 0,
-  })
-  const transButton = useSpring({
+  }
+  const buttonStyle = {
     left: collapsed ? 0 : fullWidth - toggleWidth,
     width: collapsed ? collapsedWidth : toggleWidth,
-  })
+  }
 
   const { data, isLoading } = useClientRequest((reqConfig) =>
     client.getInstance().infoGet(reqConfig)
@@ -69,10 +67,7 @@ export default function ToggleBanner({
 
   return (
     <div className={styles.banner} onClick={onToggle}>
-      <animated.div
-        style={transBanner}
-        className={styles.bannerLeftAnimationWrapper}
-      >
+      <div style={bannerStyle}>
         <div
           ref={bannerRef}
           className={styles.bannerLeft}
@@ -91,14 +86,14 @@ export default function ToggleBanner({
             </div>
           </Flexbox>
         </div>
-      </animated.div>
-      <animated.div style={transButton} className={styles.bannerRight}>
+      </div>
+      <div style={buttonStyle} className={styles.bannerRight}>
         {collapsed ? (
           <MenuUnfoldOutlined style={{ margin: 'auto' }} />
         ) : (
           <MenuFoldOutlined style={{ margin: 'auto' }} />
         )}
-      </animated.div>
+      </div>
     </div>
   )
 }

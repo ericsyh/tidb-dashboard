@@ -1,23 +1,9 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Select,
-  Space,
-  Tooltip,
-  Input,
-  Checkbox,
-  message,
-  Menu,
-  Dropdown,
-} from 'antd'
-import {
-  ReloadOutlined,
-  LoadingOutlined,
-  MenuOutlined,
-  ExportOutlined,
-} from '@ant-design/icons'
+import { Select, Space, Tooltip, Input, Checkbox } from 'antd'
+import { ReloadOutlined, LoadingOutlined } from '@ant-design/icons'
 import { ScrollablePane } from 'office-ui-fabric-react/lib/ScrollablePane'
-import { useLocalStorageState } from 'ahooks'
+import { useLocalStorageState } from '@umijs/hooks'
 
 import {
   Card,
@@ -26,7 +12,6 @@ import {
   Toolbar,
   MultiSelect,
 } from '@lib/components'
-import { CacheContext } from '@lib/utils/useCache'
 
 import SlowQueriesTable from '../../components/SlowQueriesTable'
 import useSlowQueryTableController, {
@@ -43,8 +28,6 @@ const LIMITS = [100, 200, 500, 1000]
 function List() {
   const { t } = useTranslation()
 
-  const slowQueryCacheMgr = useContext(CacheContext)
-
   const [visibleColumnKeys, setVisibleColumnKeys] = useLocalStorageState(
     SLOW_QUERY_VISIBLE_COLUMN_KEYS,
     DEF_SLOW_QUERY_COLUMN_KEYS
@@ -54,11 +37,7 @@ function List() {
     false
   )
 
-  const controller = useSlowQueryTableController(
-    slowQueryCacheMgr,
-    visibleColumnKeys,
-    showFullSQL
-  )
+  const controller = useSlowQueryTableController(visibleColumnKeys, showFullSQL)
   const {
     queryOptions,
     setQueryOptions,
@@ -66,35 +45,7 @@ function List() {
     allSchemas,
     loadingSlowQueries,
     tableColumns,
-    downloadCSV,
-    downloading,
   } = controller
-
-  function exportCSV() {
-    const hide = message.loading(
-      t('statement.pages.overview.toolbar.exporting') + '...',
-      0
-    )
-    downloadCSV().finally(hide)
-  }
-
-  function menuItemClick({ key }) {
-    switch (key) {
-      case 'export':
-        exportCSV()
-        break
-    }
-  }
-
-  const dropdownMenu = (
-    <Menu onClick={menuItemClick}>
-      <Menu.Item key="export" disabled={downloading} icon={<ExportOutlined />}>
-        {downloading
-          ? t('statement.pages.overview.toolbar.exporting')
-          : t('statement.pages.overview.toolbar.export')}
-      </Menu.Item>
-    </Menu>
-  )
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -173,11 +124,6 @@ function List() {
                 <ReloadOutlined onClick={refresh} />
               )}
             </Tooltip>
-            <Dropdown overlay={dropdownMenu} placement="bottomRight">
-              <div style={{ cursor: 'pointer' }}>
-                <MenuOutlined />
-              </div>
-            </Dropdown>
           </Space>
         </Toolbar>
       </Card>

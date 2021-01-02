@@ -6,9 +6,7 @@ import TableWithFilter, {
 } from '../InstanceSelect/TableWithFilter'
 import { IItem } from '.'
 
-const containerProps: React.HTMLAttributes<HTMLDivElement> = {
-  style: { fontSize: '0.8rem' },
-}
+const containerStyle = { fontSize: '0.8rem' }
 
 export interface IDropOverlayProps<T> {
   selection: ISelection
@@ -52,7 +50,7 @@ function DropOverlay<T extends IItem>({
       tableWidth={250}
       columns={columns}
       items={filteredItems}
-      containerProps={containerProps}
+      containerStyle={containerStyle}
       ref={filterTableRef}
     />
   )

@@ -12,12 +12,13 @@ const groupProps = {
   onRenderHeader: (props) => <AntCheckboxGroupHeader {...props} />,
 }
 
+const containerStyle = { fontSize: '0.8rem' }
+
 export interface IDropOverlayProps {
   selection: ISelection
   columns: IColumn[]
   items: IInstanceTableItem[]
   filterTableRef?: React.Ref<ITableWithFilterRefProps>
-  containerProps?: React.HTMLAttributes<HTMLDivElement>
 }
 
 function DropOverlay({
@@ -25,7 +26,6 @@ function DropOverlay({
   columns,
   items,
   filterTableRef,
-  containerProps,
 }: IDropOverlayProps) {
   const { t } = useTranslation()
   const [keyword, setKeyword] = useState('')
@@ -33,18 +33,6 @@ function DropOverlay({
   const [finalItems, finalGroups] = useMemo(() => {
     return filterInstanceTable(items, keyword)
   }, [items, keyword])
-
-  const { style: containerStyle, ...restContainerProps } = containerProps ?? {}
-  const finalContainerProps = useMemo(() => {
-    const style: React.CSSProperties = {
-      fontSize: '0.8rem',
-      ...containerStyle,
-    }
-    return {
-      style,
-      ...restContainerProps,
-    } as React.HTMLAttributes<HTMLDivElement> & Record<string, string>
-  }, [containerStyle, restContainerProps])
 
   return (
     <TableWithFilter
@@ -58,7 +46,7 @@ function DropOverlay({
       items={finalItems}
       groups={finalGroups}
       groupProps={groupProps}
-      containerProps={finalContainerProps}
+      containerStyle={containerStyle}
       ref={filterTableRef}
     />
   )

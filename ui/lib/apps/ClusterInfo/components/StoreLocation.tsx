@@ -53,12 +53,7 @@ export default function StoreLocation() {
     <div>
       <ErrorBar errors={[error]} />
       <AnimatedSkeleton showSkeleton={isLoading}>
-        <StoreLocationTree
-          dataSource={treeData}
-          getMinHeight={
-            () => document.documentElement.clientHeight - 80 - 48 * 2 // 48 = margin of cardInner
-          }
-        />
+        <StoreLocationTree dataSource={treeData} />
       </AnimatedSkeleton>
     </div>
   )

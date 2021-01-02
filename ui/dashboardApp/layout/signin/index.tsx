@@ -19,7 +19,7 @@ import client, { ErrorStrategy, UserAuthenticateForm } from '@lib/client'
 import * as auth from '@lib/utils/auth'
 import { useMount } from 'react-use'
 import Flexbox from '@g07cha/flexbox-react'
-import { usePersistFn } from 'ahooks'
+import { usePersistFn } from '@umijs/hooks'
 
 import { ReactComponent as Logo } from './logo.svg'
 import styles from './index.module.less'
@@ -215,7 +215,7 @@ function TiDBSignInForm({ successRoute, onClickAlternative }) {
             <Input onInput={clearErrorMsg} prefix={<UserOutlined />} disabled />
           </Form.Item>
           <Form.Item
-            data-e2e="signin_password_form_item"
+            data-e2e="password"
             name="password"
             label={t('signin.form.password')}
             {...(errorMsg && {
@@ -229,12 +229,11 @@ function TiDBSignInForm({ successRoute, onClickAlternative }) {
               disabled={loading}
               onInput={clearErrorMsg}
               ref={refPassword}
-              data-e2e="signin_password_input"
             />
           </Form.Item>
           <Form.Item>
             <Button
-              data-e2e="signin_submit"
+              id="signin_btn"
               type="primary"
               htmlType="submit"
               size="large"

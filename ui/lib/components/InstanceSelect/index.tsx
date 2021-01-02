@@ -11,7 +11,7 @@ import {
 import { useClientRequest } from '@lib/utils/useClientRequest'
 import client from '@lib/client'
 import { addTranslationResource } from '@lib/utils/i18n'
-import { usePersistFn, useControllableValue } from 'ahooks'
+import { usePersistFn, useControllableValue } from '@umijs/hooks'
 import { IColumn } from 'office-ui-fabric-react/lib/DetailsList'
 import {
   buildInstanceTable,
@@ -28,7 +28,6 @@ export interface IInstanceSelectProps
   onChange?: (value: string[]) => void
   enableTiFlash?: boolean
   defaultSelectAll?: boolean
-  dropContainerProps?: React.HTMLAttributes<HTMLDivElement>
 }
 
 export interface IInstanceSelectRefProps {
@@ -86,7 +85,6 @@ function InstanceSelect(
   const {
     enableTiFlash,
     defaultSelectAll,
-    dropContainerProps,
     value, // only to exclude from restProps
     onChange, // only to exclude from restProps
     ...restProps
@@ -245,10 +243,9 @@ function InstanceSelect(
         items={tableItems}
         selection={selection.current}
         filterTableRef={filterTableRef}
-        containerProps={dropContainerProps}
       />
     ),
-    [columns, tableItems, dropContainerProps]
+    [columns, tableItems]
   )
 
   const handleOpened = useCallback(() => {

@@ -2,13 +2,13 @@ import React from 'react'
 import { Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
-import { useLocalStorageState } from 'ahooks'
 import { ArrowLeftOutlined } from '@ant-design/icons'
+import { useLocalStorageState } from '@umijs/hooks'
 
 import client from '@lib/client'
 import { useClientRequest } from '@lib/utils/useClientRequest'
 import { buildQueryFn, parseQueryFn } from '@lib/utils/query'
-import formatSql from '@lib/utils/sqlFormatter'
+import formatSql from '@lib/utils/formatSql'
 import {
   AnimatedSkeleton,
   CardTabs,
@@ -27,7 +27,7 @@ import TabCopr from './DetailTabCopr'
 import TabTxn from './DetailTabTxn'
 
 export interface IPageQuery {
-  connectId?: string
+  connectId?: number
   digest?: string
   timestamp?: number
 }
@@ -66,29 +66,6 @@ function DetailPage() {
   const togglePlan = () =>
     setDetailExpand((prev) => ({ ...prev, plan: !prev.plan }))
 
-  const tabs = [
-    {
-      key: 'basic',
-      title: t('slow_query.detail.tabs.basic'),
-      content: () => <TabBasic data={data!} />,
-    },
-    {
-      key: 'time',
-      title: t('slow_query.detail.tabs.time'),
-      content: () => <TabTime data={data!} />,
-    },
-    {
-      key: 'copr',
-      title: t('slow_query.detail.tabs.copr'),
-      content: () => <TabCopr data={data!} />,
-    },
-    {
-      key: 'txn',
-      title: t('slow_query.detail.tabs.txn'),
-      content: () => <TabTxn data={data!} />,
-    },
-  ]
-
   return (
     <div>
       <Head
@@ -114,14 +91,7 @@ function DetailPage() {
                         expanded={detailExpand.query}
                         onClick={toggleQuery}
                       />
-                      <CopyLink
-                        displayVariant="formatted_sql"
-                        data={formatSql(data.query!)}
-                      />
-                      <CopyLink
-                        displayVariant="original_sql"
-                        data={data.query!}
-                      />
+                      <CopyLink data={formatSql(data.query!)} />
                     </Space>
                   }
                 >
@@ -147,14 +117,7 @@ function DetailPage() {
                               expanded={detailExpand.prev_query}
                               onClick={togglePrevQuery}
                             />
-                            <CopyLink
-                              displayVariant="formatted_sql"
-                              data={formatSql(data.prev_stmt!)}
-                            />
-                            <CopyLink
-                              displayVariant="original_sql"
-                              data={data.prev_stmt!}
-                            />
+                            <CopyLink data={formatSql(data.prev_stmt!)} />
                           </Space>
                         }
                       >
@@ -189,7 +152,32 @@ function DetailPage() {
                 </Descriptions.Item>
               </Descriptions>
 
-              <CardTabs animated={false} tabs={tabs} />
+              <CardTabs animated={false}>
+                <CardTabs.TabPane
+                  tab={t('slow_query.detail.tabs.basic')}
+                  key="basic"
+                >
+                  <TabBasic data={data} />
+                </CardTabs.TabPane>
+                <CardTabs.TabPane
+                  tab={t('slow_query.detail.tabs.time')}
+                  key="time"
+                >
+                  <TabTime data={data} />
+                </CardTabs.TabPane>
+                <CardTabs.TabPane
+                  tab={t('slow_query.detail.tabs.copr')}
+                  key="copr"
+                >
+                  <TabCopr data={data} />
+                </CardTabs.TabPane>
+                <CardTabs.TabPane
+                  tab={t('slow_query.detail.tabs.txn')}
+                  key="txn"
+                >
+                  <TabTxn data={data} />
+                </CardTabs.TabPane>
+              </CardTabs>
             </>
           )}
         </AnimatedSkeleton>

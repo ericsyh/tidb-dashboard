@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -27,7 +28,6 @@ import (
 	"go.etcd.io/etcd/clientv3"
 	"go.uber.org/fx"
 
-	"github.com/pingcap-incubator/tidb-dashboard/pkg/apiserver/clusterinfo/hostinfo"
 	"github.com/pingcap-incubator/tidb-dashboard/pkg/apiserver/user"
 	"github.com/pingcap-incubator/tidb-dashboard/pkg/apiserver/utils"
 	"github.com/pingcap-incubator/tidb-dashboard/pkg/httpc"
@@ -60,7 +60,7 @@ func NewService(lc fx.Lifecycle, p ServiceParams) *Service {
 	return s
 }
 
-func RegisterRouter(r *gin.RouterGroup, auth *user.AuthService, s *Service) {
+func Register(r *gin.RouterGroup, auth *user.AuthService, s *Service) {
 	endpoint := r.Group("/topology")
 	endpoint.Use(auth.MWAuthRequired())
 	endpoint.GET("/tidb", s.getTiDBTopology)
@@ -77,7 +77,6 @@ func RegisterRouter(r *gin.RouterGroup, auth *user.AuthService, s *Service) {
 	endpoint.Use(auth.MWAuthRequired())
 	endpoint.Use(utils.MWConnectTiDB(s.params.TiDBClient))
 	endpoint.GET("/all", s.getHostsInfo)
-	endpoint.GET("/statistics", s.getStatistics)
 }
 
 // @Summary Hide a TiDB instance
@@ -234,49 +233,79 @@ func (s *Service) getAlertManagerCounts(c *gin.Context) {
 	c.JSON(http.StatusOK, cnt)
 }
 
-type GetHostsInfoResponse struct {
-	Hosts   []*hostinfo.Info `json:"hosts"`
-	Warning *utils.APIError  `json:"warning"`
-}
-
-// @ID clusterInfoGetHostsInfo
+// @ID getHostsInfo
 // @Summary Get information of all hosts
+// @Description Get information about host in the cluster
+// @Success 200 {array} HostInfo
 // @Router /host/all [get]
 // @Security JwtAuth
-// @Success 200 {object} GetHostsInfoResponse
 // @Failure 401 {object} utils.APIError "Unauthorized failure"
 func (s *Service) getHostsInfo(c *gin.Context) {
 	db := utils.GetTiDBConnection(c)
 
-	info, err := s.fetchAllHostsInfo(db)
-	if err != nil && info == nil {
+	allHostsMap, err := s.fetchAllInstanceHostsMap()
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	hostsInfo, err := GetAllHostInfo(db)
+	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	var warning *utils.APIError
-	if err != nil {
-		warning = utils.NewAPIError(err)
+	hostsInfoMap := make(map[string]HostInfo)
+	for _, hi := range hostsInfo {
+		hostsInfoMap[hi.IP] = hi
 	}
 
-	c.JSON(http.StatusOK, GetHostsInfoResponse{
-		Hosts:   info,
-		Warning: warning,
+	hiList := make([]HostInfo, 0, len(hostsInfo))
+	for hostIP := range allHostsMap {
+		if hi, ok := hostsInfoMap[hostIP]; ok {
+			hiList = append(hiList, hi)
+		} else {
+			hiList = append(hiList, HostInfo{
+				IP:          hostIP,
+				Unavailable: true,
+			})
+		}
+	}
+
+	sort.Slice(hiList, func(i, j int) bool {
+		return hiList[i].IP < hiList[j].IP
 	})
+
+	c.JSON(http.StatusOK, hiList)
 }
 
-// @ID clusterInfoGetStatistics
-// @Summary Get cluster statistics
-// @Router /host/statistics [get]
-// @Security JwtAuth
-// @Success 200 {object} ClusterStatistics
-// @Failure 401 {object} utils.APIError "Unauthorized failure"
-func (s *Service) getStatistics(c *gin.Context) {
-	db := utils.GetTiDBConnection(c)
-	stats, err := s.calculateStatistics(db)
+func (s *Service) fetchAllInstanceHostsMap() (map[string]struct{}, error) {
+	allHosts := make(map[string]struct{})
+	pdInfo, err := topology.FetchPDTopology(s.params.PDClient)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, stats)
+	for _, i := range pdInfo {
+		allHosts[i.IP] = struct{}{}
+	}
+
+	tikvInfo, tiFlashInfo, err := topology.FetchStoreTopology(s.params.PDClient)
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range tikvInfo {
+		allHosts[i.IP] = struct{}{}
+	}
+	for _, i := range tiFlashInfo {
+		allHosts[i.IP] = struct{}{}
+	}
+
+	tidbInfo, err := topology.FetchTiDBTopology(s.lifecycleCtx, s.params.EtcdClient)
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range tidbInfo {
+		allHosts[i.IP] = struct{}{}
+	}
+
+	return allHosts, nil
 }

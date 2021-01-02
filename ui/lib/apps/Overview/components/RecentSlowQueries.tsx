@@ -14,7 +14,6 @@ import {
 export default function RecentSlowQueries() {
   const { t } = useTranslation()
   const controller = useSlowQueryTableController(
-    null,
     DEF_SLOW_QUERY_COLUMN_KEYS,
     false,
     { ...DEF_SLOW_QUERY_OPTIONS, limit: 10 },

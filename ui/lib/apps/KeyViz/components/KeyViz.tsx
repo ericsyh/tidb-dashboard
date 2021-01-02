@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Button, Drawer, Result } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useGetSet, useMount, useInterval } from 'react-use'
-import { useBoolean } from 'ahooks'
+import { useBoolean } from '@umijs/hooks'
 
 import client, { ConfigKeyVisualConfig } from '@lib/client'
 import { Heatmap } from '../heatmap'
@@ -91,10 +91,11 @@ const KeyViz = () => {
   const [getBrightLevel, setBrightLevel] = useGetSet(1)
   const [getMetricType, setMetricType] = useGetSet<DataTag>('written_bytes')
   const [config, setConfig] = useState<ConfigKeyVisualConfig | null>(null)
-  const [
-    shouldShowSettings,
-    { setTrue: openSettings, setFalse: closeSettings },
-  ] = useBoolean(false)
+  const {
+    state: shouldShowSettings,
+    setTrue: openSettings,
+    setFalse: closeSettings,
+  } = useBoolean(false)
   const { t } = useTranslation()
 
   const enabled = config?.auto_collection_disabled !== true

@@ -1,9 +1,9 @@
-import { usePersistFn } from 'ahooks'
+import { usePersistFn } from '@umijs/hooks'
 import React, { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import openLink from '@lib/utils/openLink'
 import { CardTable, ICardTableProps } from '@lib/components'
+import openLink from '@lib/utils/openLink'
 
 import DetailPage from '../pages/Detail'
 import { IStatementTableController } from '../utils/useStatementTableController'

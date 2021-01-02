@@ -1,35 +1,23 @@
 import React, { useState } from 'react'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
+import { addTranslationResource } from '@lib/utils/i18n'
 import { useTranslation } from 'react-i18next'
 import { useTimeoutFn } from 'react-use'
 import { CheckOutlined, CopyOutlined } from '@ant-design/icons'
-import { addTranslationResource } from '@lib/utils/i18n'
 
 import styles from './index.module.less'
 
-type DisplayVariant = 'default' | 'original_sql' | 'formatted_sql'
-const transKeys: { [K in DisplayVariant]: string } = {
-  default: 'copy',
-  original_sql: 'copyOriginal',
-  formatted_sql: 'copyFormatted',
-}
-
 export interface ICopyLinkProps {
   data?: string
-  displayVariant?: DisplayVariant
 }
 
 const translations = {
   en: {
-    copy: 'Copy',
-    copyOriginal: 'Copy Original',
-    copyFormatted: 'Copy Formatted',
+    text: 'Copy',
     success: 'Copied',
   },
   zh: {
-    copy: '复制',
-    copyOriginal: '复制原始 SQL',
-    copyFormatted: '复制格式化 SQL',
+    text: '复制',
     success: '已复制',
   },
 }
@@ -42,7 +30,7 @@ for (const key in translations) {
   })
 }
 
-function CopyLink({ data, displayVariant = 'default' }: ICopyLinkProps) {
+function CopyLink({ data }: ICopyLinkProps) {
   const { t } = useTranslation()
   const [showCopied, setShowCopied] = useState(false)
 
@@ -60,8 +48,7 @@ function CopyLink({ data, displayVariant = 'default' }: ICopyLinkProps) {
       {!showCopied && (
         <CopyToClipboard text={data} onCopy={handleCopy}>
           <a>
-            {t(`component.copyLink.${transKeys[displayVariant]}`)}{' '}
-            <CopyOutlined />
+            {t('component.copyLink.text')} <CopyOutlined />
           </a>
         </CopyToClipboard>
       )}

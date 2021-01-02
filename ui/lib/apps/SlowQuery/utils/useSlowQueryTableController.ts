@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSessionStorageState } from 'ahooks'
+import { useSessionStorageState } from '@umijs/hooks'
 import { IColumn } from 'office-ui-fabric-react/lib/DetailsList'
 
 import client, { ErrorStrategy, SlowquerySlowQuery } from '@lib/client'
-import {
-  calcTimeRange,
-  TimeRange,
-  IColumnKeys,
-  stringifyTimeRange,
-} from '@lib/components'
+import { calcTimeRange, TimeRange, IColumnKeys } from '@lib/components'
 import useOrderState, { IOrderOptions } from '@lib/utils/useOrderState'
 
-import { getSelectedFields } from '@lib/utils/tableColumnFactory'
-import { CacheMgr } from '@lib/utils/useCache'
-
 import { derivedFields, slowQueryColumns } from './tableColumns'
+import { getSelectedFields } from '@lib/utils/tableColumnFactory'
 
 export const DEF_SLOW_QUERY_COLUMN_KEYS: IColumnKeys = {
   query: true,
@@ -66,13 +59,9 @@ export interface ISlowQueryTableController {
 
   tableColumns: IColumn[]
   visibleColumnKeys: IColumnKeys
-
-  downloadCSV: () => Promise<void>
-  downloading: boolean
 }
 
 export default function useSlowQueryTableController(
-  cacheMgr: CacheMgr | null,
   visibleColumnKeys: IColumnKeys,
   showFullSQL: boolean,
   options?: ISlowQueryOptions,
@@ -101,7 +90,7 @@ export default function useSlowQueryTableController(
   }, [queryOptions])
 
   const [allSchemas, setAllSchemas] = useState<string[]>([])
-  const [loadingSlowQueries, setLoadingSlowQueries] = useState(false)
+  const [loadingSlowQueries, setLoadingSlowQueries] = useState(true)
   const [slowQueries, setSlowQueries] = useState<SlowquerySlowQuery[]>([])
   const [refreshTimes, setRefreshTimes] = useState(0)
 
@@ -115,32 +104,7 @@ export default function useSlowQueryTableController(
 
   const [errors, setErrors] = useState<Error[]>([])
 
-  const selectedFields = useMemo(
-    () => getSelectedFields(visibleColumnKeys, derivedFields).join(','),
-    [visibleColumnKeys]
-  )
-
-  const cacheKey = useMemo(() => {
-    const {
-      schemas,
-      digest,
-      limit,
-      plans,
-      searchText,
-      timeRange,
-    } = queryOptions
-    const { desc, orderBy } = orderOptions
-    const cacheKey = `${schemas.join(',')}_${digest}_${limit}_${plans.join(
-      ','
-    )}_${searchText}_${stringifyTimeRange(
-      timeRange
-    )}_${desc}_${orderBy}_${selectedFields}`
-    return cacheKey
-  }, [queryOptions, orderOptions, selectedFields])
-
   function refresh() {
-    cacheMgr?.remove(cacheKey)
-
     setErrors([])
     setRefreshTimes((prev) => prev + 1)
   }
@@ -153,12 +117,16 @@ export default function useSlowQueryTableController(
         })
         setAllSchemas(res?.data || [])
       } catch (e) {
-        setErrors((prev) => prev.concat(e))
+        setErrors((prev) => [...prev, { ...e }])
       }
     }
-
     querySchemas()
   }, [])
+
+  const selectedFields = useMemo(
+    () => getSelectedFields(visibleColumnKeys, derivedFields).join(','),
+    [visibleColumnKeys]
+  )
 
   const tableColumns = useMemo(
     () => slowQueryColumns(slowQueries, showFullSQL),
@@ -167,24 +135,18 @@ export default function useSlowQueryTableController(
 
   useEffect(() => {
     async function getSlowQueryList() {
-      const cacheItem = cacheMgr?.get(cacheKey)
-      if (cacheItem) {
-        setSlowQueries(cacheItem)
-        return
-      }
-
       setLoadingSlowQueries(true)
       try {
         const res = await client
           .getInstance()
           .slowQueryListGet(
-            queryTimeRange.beginTime,
             queryOptions.schemas,
             orderOptions.desc,
             queryOptions.digest,
-            queryTimeRange.endTime,
             selectedFields,
             queryOptions.limit,
+            queryTimeRange.endTime,
+            queryTimeRange.beginTime,
             orderOptions.orderBy,
             queryOptions.plans,
             queryOptions.searchText,
@@ -193,48 +155,15 @@ export default function useSlowQueryTableController(
             }
           )
         setSlowQueries(res.data || [])
-        cacheMgr?.set(cacheKey, res.data || [])
         setErrors([])
       } catch (e) {
-        setErrors((prev) => prev.concat(e))
+        setErrors((prev) => [...prev, { ...e }])
       }
       setLoadingSlowQueries(false)
     }
+
     getSlowQueryList()
-  }, [
-    queryOptions,
-    orderOptions,
-    queryTimeRange,
-    selectedFields,
-    refreshTimes,
-    cacheKey,
-    cacheMgr,
-  ])
-
-  const [downloading, setDownloading] = useState(false)
-
-  async function downloadCSV() {
-    try {
-      setDownloading(true)
-      const res = await client.getInstance().slowQueryDownloadTokenPost({
-        fields: '*',
-        db: queryOptions.schemas,
-        digest: queryOptions.digest,
-        text: queryOptions.searchText,
-        plans: queryOptions.plans,
-        orderBy: orderOptions.orderBy,
-        desc: orderOptions.desc,
-        end_time: queryTimeRange.endTime,
-        begin_time: queryTimeRange.beginTime,
-      })
-      const token = res.data
-      if (token) {
-        window.location.href = `${client.getBasePath()}/slow_query/download?token=${token}`
-      }
-    } finally {
-      setDownloading(false)
-    }
-  }
+  }, [queryOptions, orderOptions, queryTimeRange, refreshTimes, selectedFields])
 
   return {
     queryOptions,
@@ -252,8 +181,5 @@ export default function useSlowQueryTableController(
 
     tableColumns,
     visibleColumnKeys,
-
-    downloading,
-    downloadCSV,
   }
 }

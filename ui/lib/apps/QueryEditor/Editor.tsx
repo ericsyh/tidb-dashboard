@@ -1,6 +1,6 @@
-import React, { useRef } from 'react'
+import React from 'react'
 import AceEditor, { IAceEditorProps } from 'react-ace'
-import { useSize } from 'ahooks'
+import { useSize } from '@umijs/hooks'
 
 import 'ace-builds/src-noconflict/mode-sql'
 import 'ace-builds/src-noconflict/ext-searchbox'
@@ -12,8 +12,7 @@ import styles from './Editor.module.less'
 interface IEditorProps extends IAceEditorProps {}
 
 function Editor({ ...props }: IEditorProps, ref: React.Ref<AceEditor>) {
-  const containerRef = useRef(null)
-  const containerSize = useSize(containerRef)
+  const [state, containerRef] = useSize<HTMLDivElement>()
   return (
     <div className={styles.editorContainer} ref={containerRef}>
       <AceEditor
@@ -24,8 +23,8 @@ function Editor({ ...props }: IEditorProps, ref: React.Ref<AceEditor>) {
         showPrintMargin={false}
         showGutter={true}
         highlightActiveLine={true}
-        width={`${containerSize.width}px`}
-        height={`${containerSize.height}px`}
+        width={`${state.width}px`}
+        height={`${state.height}px`}
         ref={ref}
         {...props}
       />

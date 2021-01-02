@@ -22,7 +22,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/pingcap-incubator/tidb-dashboard/pkg/pd"
-	"github.com/pingcap-incubator/tidb-dashboard/pkg/utils/host"
 )
 
 func FetchPDTopology(pdClient *pd.Client) ([]PDInfo, error) {
@@ -54,7 +53,7 @@ func FetchPDTopology(pdClient *pd.Client) ([]PDInfo, error) {
 
 	for _, ds := range ds.Members {
 		u := ds.ClientUrls[0]
-		hostname, port, err := host.ParseHostAndPortFromAddressURL(u)
+		host, port, err := parseHostAndPortFromAddressURL(u)
 		if err != nil {
 			continue
 		}
@@ -75,7 +74,7 @@ func FetchPDTopology(pdClient *pd.Client) ([]PDInfo, error) {
 		nodes = append(nodes, PDInfo{
 			GitHash:        ds.GitHash,
 			Version:        ds.BinaryVersion,
-			IP:             hostname,
+			IP:             host,
 			Port:           port,
 			DeployPath:     ds.DeployPath,
 			Status:         storeStatus,

@@ -7,7 +7,7 @@ import { Button, Form, Input, Select, Modal } from 'antd'
 import React, { useState, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { useMount } from 'ahooks'
+import { useMount } from '@umijs/hooks'
 import {
   TimeRangeSelector,
   TimeRange,
@@ -151,7 +151,7 @@ export default function SearchHeader({ taskGroupID }: Props) {
         <Select style={{ width: 100 }}>
           {ValidLogLevels.map((val) => (
             <Select.Option key={val} value={val}>
-              {LogLevelText[val]}
+              <div data-e2e={`level_${val}`}>{LogLevelText[val]}</div>
             </Select.Option>
           ))}
         </Select>
@@ -162,22 +162,17 @@ export default function SearchHeader({ taskGroupID }: Props) {
           defaultSelectAll
           enableTiFlash
           style={{ width: 300 }}
-          data-e2e="log_search_instances"
-          dropContainerProps={
-            { 'data-e2e': 'log_search_instances_drop' } as any
-          }
         />
       </Form.Item>
       <Form.Item name="keywords">
         <Input
-          data-e2e="log_search_keywords"
           placeholder={t('search_logs.common.keywords_placeholder')}
           style={{ width: 300 }}
         />
       </Form.Item>
       <Form.Item>
         <Button
-          data-e2e="log_search_submit"
+          id="search_btn"
           type="primary"
           htmlType="submit"
           loading={isSubmitting}

@@ -60,13 +60,10 @@ function fieldsKeyColumn(transKeyPrefix: string): IColumn {
     minWidth: 150,
     maxWidth: 250,
     onRender: (rec) => {
-      return (
-        <div style={{ paddingLeft: (rec.indentLevel || 0) * 24 }}>
-          {rec.keyDisplay ?? (
-            <TransText transKey={`${transKeyPrefix}${rec.key}`} />
-          )}
-        </div>
-      )
+      if (rec.keyDisplay) {
+        return rec.keyDisplay
+      }
+      return <TransText transKey={`${transKeyPrefix}${rec.key}`} />
     },
   }
 }
@@ -136,16 +133,11 @@ function fieldsDescriptionColumn(transKeyPrefix: string): IColumn {
     minWidth: 150,
     maxWidth: 300,
     onRender: (rec) => {
-      const content = (
+      return (
         <TransText
           transKey={`${transKeyPrefix}${rec.key}_tooltip`}
           noFallback
         />
-      )
-      return (
-        <Tooltip title={content}>
-          <span>{content}</span>
-        </Tooltip>
       )
     },
   }

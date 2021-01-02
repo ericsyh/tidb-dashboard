@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSessionStorageState } from 'ahooks'
+import { useSessionStorageState } from '@umijs/hooks'
 import { IColumn } from 'office-ui-fabric-react/lib/DetailsList'
 
 import client, {
@@ -7,10 +7,8 @@ import client, {
   StatementModel,
   StatementTimeRange,
 } from '@lib/client'
-import { IColumnKeys, stringifyTimeRange } from '@lib/components'
+import { IColumnKeys } from '@lib/components'
 import useOrderState, { IOrderOptions } from '@lib/utils/useOrderState'
-import { getSelectedFields } from '@lib/utils/tableColumnFactory'
-import { CacheMgr } from '@lib/utils/useCache'
 
 import {
   calcValidStatementTimeRange,
@@ -18,6 +16,7 @@ import {
   TimeRange,
 } from '../pages/List/TimeRangeSelector'
 import { derivedFields, statementColumns } from './tableColumns'
+import { getSelectedFields } from '@lib/utils/tableColumnFactory'
 
 export const DEF_STMT_COLUMN_KEYS: IColumnKeys = {
   digest_text: true,
@@ -68,13 +67,9 @@ export interface IStatementTableController {
 
   tableColumns: IColumn[]
   visibleColumnKeys: IColumnKeys
-
-  downloadCSV: () => Promise<void>
-  downloading: boolean
 }
 
 export default function useStatementTableController(
-  cacheMgr: CacheMgr | null,
   visibleColumnKeys: IColumnKeys,
   showFullSQL: boolean,
   options?: IStatementQueryOptions,
@@ -108,7 +103,7 @@ export default function useStatementTableController(
     [queryOptions, allTimeRanges]
   )
 
-  const [loadingStatements, setLoadingStatements] = useState(false)
+  const [loadingStatements, setLoadingStatements] = useState(true)
   const [statements, setStatements] = useState<StatementModel[]>([])
 
   const [refreshTimes, setRefreshTimes] = useState(0)
@@ -123,24 +118,8 @@ export default function useStatementTableController(
 
   const [errors, setErrors] = useState<any[]>([])
 
-  const selectedFields = useMemo(
-    () => getSelectedFields(visibleColumnKeys, derivedFields).join(','),
-    [visibleColumnKeys]
-  )
-
-  const cacheKey = useMemo(() => {
-    const { schemas, stmtTypes, searchText, timeRange } = queryOptions
-    const cacheKey = `${schemas.join(',')}_${stmtTypes.join(
-      ','
-    )}_${searchText}_${stringifyTimeRange(timeRange)}_${selectedFields}`
-    return cacheKey
-  }, [queryOptions, selectedFields])
-
   function refresh() {
-    cacheMgr?.remove(cacheKey)
-
     setErrors([])
-    setLoadingStatements(true)
     setRefreshTimes((prev) => prev + 1)
   }
 
@@ -152,7 +131,7 @@ export default function useStatementTableController(
         })
         setEnable(res?.data.enable!)
       } catch (e) {
-        setErrors((prev) => prev.concat(e))
+        setErrors((prev) => [...prev, { ...e }])
       }
     }
 
@@ -163,7 +142,7 @@ export default function useStatementTableController(
         })
         setAllSchemas(res?.data || [])
       } catch (e) {
-        setErrors((prev) => prev.concat(e))
+        setErrors((prev) => [...prev, { ...e }])
       }
     }
 
@@ -174,7 +153,7 @@ export default function useStatementTableController(
         })
         setAllTimeRanges(res?.data || [])
       } catch (e) {
-        setErrors((prev) => prev.concat(e))
+        setErrors((prev) => [...prev, { ...e }])
       }
     }
 
@@ -185,7 +164,7 @@ export default function useStatementTableController(
         })
         setAllStmtTypes(res?.data || [])
       } catch (e) {
-        setErrors((prev) => prev.concat(e))
+        setErrors((prev) => [...prev, { ...e }])
       }
     }
 
@@ -195,6 +174,11 @@ export default function useStatementTableController(
     queryStmtTypes()
   }, [refreshTimes])
 
+  const selectedFields = useMemo(
+    () => getSelectedFields(visibleColumnKeys, derivedFields).join(','),
+    [visibleColumnKeys]
+  )
+
   const tableColumns = useMemo(
     () => statementColumns(statements, showFullSQL),
     [statements, showFullSQL]
@@ -202,21 +186,17 @@ export default function useStatementTableController(
 
   useEffect(() => {
     async function queryStatementList() {
-      const cacheItem = cacheMgr?.get(cacheKey)
-      if (cacheItem) {
-        setStatements(cacheItem)
-        return
-      }
-
       if (allTimeRanges.length === 0) {
+        setStatements([])
         setLoadingStatements(false)
         return
       }
+
       setLoadingStatements(true)
       try {
         const res = await client
           .getInstance()
-          .statementsListGet(
+          .statementsOverviewsGet(
             validTimeRange.begin_time!,
             validTimeRange.end_time!,
             selectedFields,
@@ -228,45 +208,15 @@ export default function useStatementTableController(
             }
           )
         setStatements(res?.data || [])
-        cacheMgr?.set(cacheKey, res?.data || [])
         setErrors([])
       } catch (e) {
-        setErrors((prev) => prev.concat(e))
+        setErrors((prev) => [...prev, { ...e }])
       }
       setLoadingStatements(false)
     }
 
     queryStatementList()
-  }, [
-    queryOptions,
-    allTimeRanges,
-    validTimeRange,
-    selectedFields,
-    cacheKey,
-    cacheMgr,
-  ])
-
-  const [downloading, setDownloading] = useState(false)
-
-  async function downloadCSV() {
-    try {
-      setDownloading(true)
-      const res = await client.getInstance().statementsDownloadTokenPost({
-        begin_time: validTimeRange.begin_time,
-        end_time: validTimeRange.end_time,
-        fields: '*',
-        schemas: queryOptions.schemas,
-        stmt_types: queryOptions.stmtTypes,
-        text: queryOptions.searchText,
-      })
-      const token = res.data
-      if (token) {
-        window.location.href = `${client.getBasePath()}/statements/download?token=${token}`
-      }
-    } finally {
-      setDownloading(false)
-    }
-  }
+  }, [queryOptions, allTimeRanges, validTimeRange, selectedFields])
 
   return {
     queryOptions,
@@ -287,8 +237,5 @@ export default function useStatementTableController(
 
     tableColumns,
     visibleColumnKeys,
-
-    downloadCSV,
-    downloading,
   }
 }
