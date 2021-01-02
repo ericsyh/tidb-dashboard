@@ -1,6 +1,6 @@
 import React from 'react'
 import { Space } from 'antd'
-import { useLocalStorageState } from '@umijs/hooks'
+import { useLocalStorageState } from 'ahooks'
 import { useTranslation } from 'react-i18next'
 import {
   AnimatedSkeleton,
@@ -16,7 +16,7 @@ import {
 } from '@lib/components'
 import { useClientRequest } from '@lib/utils/useClientRequest'
 import client from '@lib/client'
-import formatSql from '@lib/utils/formatSql'
+import formatSql from '@lib/utils/sqlFormatter'
 
 import { IPageQuery } from '.'
 import TabBasic from './PlanDetailTabBasic'
@@ -67,17 +67,46 @@ function PlanDetail({ query }: IPlanDetailProps) {
   const togglePlan = () =>
     setDetailExpand((prev) => ({ ...prev, plan: !prev.plan }))
 
-  let title_key
+  let titleKey
   if (query.allPlans === 1) {
-    title_key = 'one_for_all'
+    titleKey = 'one_for_all'
   } else if (query.plans.length === query.allPlans) {
-    title_key = 'all'
+    titleKey = 'all'
   } else {
-    title_key = 'some'
+    titleKey = 'some'
   }
+
+  const tabs = [
+    {
+      key: 'basic',
+      title: t('statement.pages.detail.tabs.basic'),
+      content: () => <TabBasic data={data!} />,
+    },
+    {
+      key: 'time',
+      title: t('statement.pages.detail.tabs.time'),
+      content: () => <TabTime data={data!} />,
+    },
+    {
+      key: 'copr',
+      title: t('statement.pages.detail.tabs.copr'),
+      content: () => <TabCopr data={data!} />,
+    },
+    {
+      key: 'txn',
+      title: t('statement.pages.detail.tabs.txn'),
+      content: () => <TabTxn data={data!} />,
+    },
+    {
+      key: 'slow_query',
+      title: t('statement.pages.detail.tabs.slow_query'),
+      content: () => <SlowQueryTab query={query} />,
+    },
+  ]
+
   return (
     <Card
-      title={t(`statement.pages.detail.desc.plans.title.${title_key}`, {
+      title={t(`statement.pages.detail.desc.plans.title.${titleKey}`, {
         n: query.plans.length,
       })}
     >
@@ -96,7 +125,14 @@ function PlanDetail({ query }: IPlanDetailProps) {
                       expanded={detailExpand.query}
                       onClick={toggleQuery}
                     />
-                    <CopyLink data={formatSql(data.query_sample_text)} />
+                    <CopyLink
+                      displayVariant="formatted_sql"
+                      data={formatSql(data.query_sample_text)}
+                    />
+                    <CopyLink
+                      displayVariant="original_sql"
+                      data={data.query_sample_text}
+                    />
                   </Space>
                 }
               >
@@ -120,7 +156,14 @@ function PlanDetail({ query }: IPlanDetailProps) {
                         expanded={detailExpand.prev_query}
                         onClick={togglePrevQuery}
                       />
-                      <CopyLink data={formatSql(data.prev_sample_text)} />
+                      <CopyLink
+                        displayVariant="formatted_sql"
+                        data={formatSql(data.prev_sample_text)}
+                      />
+                      <CopyLink
+                        displayVariant="original_sql"
+                        data={data.prev_sample_text}
+                      />
                     </Space>
                   }
                 >
@@ -153,38 +196,8 @@ function PlanDetail({ query }: IPlanDetailProps) {
                 </Expand>
               </Descriptions.Item>
             </Descriptions>
-            <CardTabs animated={false}>
-              <CardTabs.TabPane
-                tab={t('statement.pages.detail.tabs.basic')}
-                key="basic"
-              >
-                <TabBasic data={data} />
-              </CardTabs.TabPane>
-              <CardTabs.TabPane
-                tab={t('statement.pages.detail.tabs.time')}
-                key="time"
-              >
-                <TabTime data={data} />
-              </CardTabs.TabPane>
-              <CardTabs.TabPane
-                tab={t('statement.pages.detail.tabs.copr')}
-                key="copr"
-              >
-                <TabCopr data={data} />
-              </CardTabs.TabPane>
-              <CardTabs.TabPane
-                tab={t('statement.pages.detail.tabs.txn')}
-                key="txn"
-              >
-                <TabTxn data={data} />
-              </CardTabs.TabPane>
-              <CardTabs.TabPane
-                tab={t('statement.pages.detail.tabs.slow_query')}
-                key="slow_query"
-              >
-                <SlowQueryTab query={query} />
-              </CardTabs.TabPane>
-            </CardTabs>
+
+            <CardTabs animated={false} tabs={tabs} />
           </>
         )}
       </AnimatedSkeleton>

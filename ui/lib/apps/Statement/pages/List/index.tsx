@@ -1,14 +1,28 @@
-import React, { useState } from 'react'
-import { Space, Tooltip, Drawer, Button, Checkbox, Result, Input } from 'antd'
-import { useLocalStorageState } from '@umijs/hooks'
+import React, { useState, useContext } from 'react'
 import {
-  SettingOutlined,
+  Space,
+  Tooltip,
+  Drawer,
+  Button,
+  Checkbox,
+  Result,
+  Input,
+  Dropdown,
+  Menu,
+  message,
+} from 'antd'
+import { useLocalStorageState } from 'ahooks'
+import {
   ReloadOutlined,
   LoadingOutlined,
+  MenuOutlined,
+  SettingOutlined,
+  ExportOutlined,
 } from '@ant-design/icons'
 import { ScrollablePane } from 'office-ui-fabric-react/lib/ScrollablePane'
 import { useTranslation } from 'react-i18next'
 
+import { CacheContext } from '@lib/utils/useCache'
 import { Card, ColumnsSelector, Toolbar, MultiSelect } from '@lib/components'
 
 import { StatementsTable } from '../../components'
@@ -26,6 +40,8 @@ const STMT_SHOW_FULL_SQL = 'statement.show_full_sql'
 export default function StatementsOverview() {
   const { t } = useTranslation()
 
+  const statementCacheMgr = useContext(CacheContext)
+
   const [showSettings, setShowSettings] = useState(false)
   const [visibleColumnKeys, setVisibleColumnKeys] = useLocalStorageState(
     STMT_VISIBLE_COLUMN_KEYS,
@@ -36,7 +52,11 @@ export default function StatementsOverview() {
     false
   )
 
-  const controller = useStatementTableController(visibleColumnKeys, showFullSQL)
+  const controller = useStatementTableController(
+    statementCacheMgr,
+    visibleColumnKeys,
+    showFullSQL
+  )
   const {
     queryOptions,
     setQueryOptions,
@@ -47,7 +67,42 @@ export default function StatementsOverview() {
     allStmtTypes,
     loadingStatements,
     tableColumns,
+
+    downloadCSV,
+    downloading,
   } = controller
+
+  function exportCSV() {
+    const hide = message.loading(
+      t('statement.pages.overview.toolbar.exporting') + '...',
+      0
+    )
+    downloadCSV().finally(hide)
+  }
+
+  function menuItemClick({ key }) {
+    switch (key) {
+      case 'settings':
+        setShowSettings(true)
+        break
+      case 'export':
+        exportCSV()
+        break
+    }
+  }
+
+  const dropdownMenu = (
+    <Menu onClick={menuItemClick}>
+      <Menu.Item key="settings" icon={<SettingOutlined />}>
+        {t('statement.settings.title')}
+      </Menu.Item>
+      <Menu.Item key="export" disabled={downloading} icon={<ExportOutlined />}>
+        {downloading
+          ? t('statement.pages.overview.toolbar.exporting')
+          : t('statement.pages.overview.toolbar.export')}
+      </Menu.Item>
+    </Menu>
+  )
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -127,9 +182,6 @@ export default function StatementsOverview() {
                 }
               />
             )}
-            <Tooltip title={t('statement.settings.title')}>
-              <SettingOutlined onClick={() => setShowSettings(true)} />
-            </Tooltip>
             <Tooltip title={t('statement.pages.overview.toolbar.refresh')}>
               {loadingStatements ? (
                 <LoadingOutlined />
@@ -137,6 +189,11 @@ export default function StatementsOverview() {
                 <ReloadOutlined onClick={refresh} />
               )}
             </Tooltip>
+            <Dropdown overlay={dropdownMenu} placement="bottomRight">
+              <div style={{ cursor: 'pointer' }}>
+                <MenuOutlined />
+              </div>
+            </Dropdown>
           </Space>
         </Toolbar>
       </Card>

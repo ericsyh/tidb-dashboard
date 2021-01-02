@@ -3,7 +3,7 @@ import cx from 'classnames'
 import { ScrollablePane } from 'office-ui-fabric-react/lib/ScrollablePane'
 import { MarqueeSelection } from 'office-ui-fabric-react/lib/MarqueeSelection'
 import { SelectionMode } from 'office-ui-fabric-react/lib/Selection'
-import { useSize } from '@umijs/hooks'
+import { useSize } from 'ahooks'
 import {
   DetailsListLayoutMode,
   ISelection,
@@ -21,8 +21,7 @@ export interface ITableWithFilterProps extends IDetailsListProps {
   onFilterChange?: (value: string) => void
   tableMaxHeight?: number
   tableWidth?: number
-  containerClassName?: string
-  containerStyle?: React.CSSProperties
+  containerProps?: React.HTMLAttributes<HTMLDivElement>
 }
 
 export interface ITableWithFilterRefProps {
@@ -37,8 +36,7 @@ function TableWithFilter(
     onFilterChange,
     tableMaxHeight,
     tableWidth,
-    containerClassName,
-    containerStyle,
+    containerProps,
     ...restProps
   }: ITableWithFilterProps,
   ref: React.Ref<ITableWithFilterRefProps>
@@ -60,24 +58,31 @@ function TableWithFilter(
 
   // FIXME: We should put Input inside ScrollablePane after https://github.com/microsoft/fluentui/issues/13557 is resolved
 
-  const [containerState, containerRef] = useSize<HTMLDivElement>()
+  const containerRef = useRef(null)
+  const containerSize = useSize(containerRef)
 
   const paneStyle = useMemo(
     () =>
       ({
         position: 'relative',
-        height: containerState.height,
+        height: containerSize.height,
         maxHeight: tableMaxHeight ?? 400,
         width: tableWidth ?? 400,
       } as React.CSSProperties),
-    [containerState.height, tableMaxHeight, tableWidth]
+    [containerSize.height, tableMaxHeight, tableWidth]
   )
+
+  const {
+    className: containerClassName,
+    style: containerStyle,
+    ...containerRestProps
+  } = containerProps ?? {}
 
   return (
     <div
       className={cx(styles.tableWithFilterContainer, containerClassName)}
       style={containerStyle}
-      data-e2e="table-with-filter"
+      {...containerRestProps}
     >
       <Input
         placeholder={filterPlaceholder}
